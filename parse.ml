@@ -50,7 +50,13 @@ let peekTokenIs (tokenH : tokenHolder) (typeoftoken : Lex.tokenType) : bool =
       false
 
 let getBindingPower (token : Lex.token) : int =
-  match token.typeOfToken with Lex.PLUS -> 10 | Lex.MUL -> 20
+  match token.typeOfToken with
+  | Lex.PLUS ->
+      10
+  | Lex.MUL ->
+      20
+  | Lex.SEMICOLON ->
+      0
 
 let genAstTerminalNode (token : Lex.token) : astExpressionNode =
   match token.typeOfToken with
@@ -59,24 +65,29 @@ let genAstTerminalNode (token : Lex.token) : astExpressionNode =
   | Lex.IDENT ->
       AstIdentNode {value= token.literal}
 
+(*mutually recursive function https://ocaml.org/learn/tutorials/labels.html*)
 let rec led (tokenH : tokenHolder) (left : astExpressionNode) :
     expressionNodeAndTokenHolder =
   let curtoken = getCurToken tokenH in
   let rbp = getBindingPower curtoken in
-  let right = parseExpression tokenH rbp in
-  AstInfixNode (operator.typeOfToken, left, right)
+  let tokenH = advanceToken tokenH in
+  let right, tokenH = parseExpression tokenH rbp in
+  (AstInfixNode (curtoken.typeOfToken, left, right), tokenH)
 
-let rec foldl (rbp : int) (lbp : int) (left : astExpressionNode)
+and foldl (rbp : int) (lbp : int) (left : astExpressionNode)
     (tokenH : tokenHolder) : expressionNodeAndTokenHolder =
   if rbp < lbp then
-    let tokenH = advanceToken tokenH in
-    led tokenH left
+    let left, tokenH = led tokenH left in
+    let curtoken = getCurToken tokenH in
+    let lbp = getBindingPower curtoken in
+    foldl rbp lbp left tokenH
   else (left, tokenH)
 
-let rec parseExpression (tokenH : tokenHolder) (rbp : int) :
+and parseExpression (tokenH : tokenHolder) (rbp : int) :
     expressionNodeAndTokenHolder =
   if peekTokenIs tokenH Lex.SEMICOLON then
     let curtoken = getCurToken tokenH in
+    let tokenH = advanceToken tokenH in
     match curtoken.typeOfToken with
     | Lex.INT ->
         (AstNumberNode (Pervasives.int_of_string curtoken.literal), tokenH)
@@ -97,7 +108,7 @@ let parseLetStatement (tokenH : tokenHolder) : astStatementNode =
   let ident = getCurToken tokenH in
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.IDENT in
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.ASSIGN in
-  let value = parseExpression tokenH 0 in
+  let value, tokenH = parseExpression tokenH 0 in
   AstLetNode ({value= ident.literal}, value)
 
 let parse (tokenH : tokenHolder) =
