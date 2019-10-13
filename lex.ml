@@ -7,6 +7,7 @@ type tokenType =
   | INT
   | ASSIGN
   | PLUS
+  | MUL
   | COMMA
   | SEMICOLON
   | LPAREN
@@ -126,6 +127,10 @@ let nextToken (lex : lexer) : tokenAndLexer =
   | '+' ->
       newTokenAndLexer
         {typeOfToken= PLUS; literal= Char.escaped newlex.ch}
+        (readChar newlex)
+  | '*' ->
+      newTokenAndLexer
+        {typeOfToken= MUL; literal= Char.escaped newlex.ch}
         (readChar newlex)
   | '{' ->
       newTokenAndLexer

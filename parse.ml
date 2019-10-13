@@ -1,10 +1,11 @@
 type tokenHolder = {tokenlist: Lex.token list; pos: int}
 
-type astNumberNode = {value: int}
+type astIdentifierNode = {value: string}
 
-type astIdentifierNode = AstIdentNode of string
-
-type astExpressionNode = AstNumberNode of string
+type astExpressionNode =
+  | AstInfixNode of Lex.tokenType * astExpressionNode * astExpressionNode
+  | AstNumberNode of int
+  | AstIdentNode of astIdentifierNode
 
 type astLetNode = astIdentifierNode * astExpressionNode
 
@@ -15,6 +16,8 @@ type astStatementNode =
   | AstReturnNode of astReturnNode
 
 type astProgramNode = astStatementNode list
+
+type expressionNodeAndTokenHolder = astExpressionNode * tokenHolder
 
 exception Foo of string
 
@@ -46,15 +49,48 @@ let peekTokenIs (tokenH : tokenHolder) (typeoftoken : Lex.tokenType) : bool =
   | _ ->
       false
 
-let parseExpression (tokenH : tokenHolder) (rbp : int) : astExpressionNode =
+let getBindingPower (token : Lex.token) : int =
+  match token.typeOfToken with Lex.PLUS -> 10 | Lex.MUL -> 20
+
+let genAstTerminalNode (token : Lex.token) : astExpressionNode =
+  match token.typeOfToken with
+  | Lex.INT ->
+      AstNumberNode (Pervasives.int_of_string token.literal)
+  | Lex.IDENT ->
+      AstIdentNode {value= token.literal}
+
+let rec led (tokenH : tokenHolder) (left : astExpressionNode) :
+    expressionNodeAndTokenHolder =
+  let curtoken = getCurToken tokenH in
+  let rbp = getBindingPower curtoken in
+  let right = parseExpression tokenH rbp in
+  AstInfixNode (operator.typeOfToken, left, right)
+
+let rec foldl (rbp : int) (lbp : int) (left : astExpressionNode)
+    (tokenH : tokenHolder) : expressionNodeAndTokenHolder =
+  if rbp < lbp then
+    let tokenH = advanceToken tokenH in
+    led tokenH left
+  else (left, tokenH)
+
+let rec parseExpression (tokenH : tokenHolder) (rbp : int) :
+    expressionNodeAndTokenHolder =
   if peekTokenIs tokenH Lex.SEMICOLON then
     let curtoken = getCurToken tokenH in
     match curtoken.typeOfToken with
     | Lex.INT ->
-        AstNumberNode curtoken.literal
+        (AstNumberNode (Pervasives.int_of_string curtoken.literal), tokenH)
     | Lex.IDENT ->
-        AstNumberNode curtoken.literal
-  else AstNumberNode ""
+        (AstIdentNode {value= curtoken.literal}, tokenH)
+    | _ ->
+        raise (Foo "eeee")
+  else
+    let curtoken = getCurToken tokenH in
+    let left = genAstTerminalNode curtoken in
+    let tokenH = advanceToken tokenH in
+    let operator = getCurToken tokenH in
+    let lbp = getBindingPower operator in
+    foldl rbp lbp left tokenH
 
 let parseLetStatement (tokenH : tokenHolder) : astStatementNode =
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.LET in
@@ -62,7 +98,7 @@ let parseLetStatement (tokenH : tokenHolder) : astStatementNode =
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.IDENT in
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.ASSIGN in
   let value = parseExpression tokenH 0 in
-  AstLetNode (AstIdentNode ident.literal, value)
+  AstLetNode ({value= ident.literal}, value)
 
 let parse (tokenH : tokenHolder) =
   let currentToken = getCurToken tokenH in
