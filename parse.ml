@@ -14,6 +14,7 @@ type astReturnNode = {value: astExpressionNode}
 type astStatementNode =
   | AstLetNode of astLetNode
   | AstReturnNode of astReturnNode
+  | AstExpressionNode of astExpressionNode
 
 type astProgramNode = astStatementNode list
 
@@ -111,6 +112,15 @@ let parseLetStatement (tokenH : tokenHolder) : astStatementNode =
   let value, tokenH = parseExpression tokenH 0 in
   AstLetNode ({value= ident.literal}, value)
 
+let parseExpressionStatement (tokenH tokenHolder) : astStatementNode = 
+    let astexpressionnode = parseExpression tokenH 0 in
+    AstExpressionNode astexpressionnode
+
 let parse (tokenH : tokenHolder) =
   let currentToken = getCurToken tokenH in
-  match currentToken.typeOfToken with Lex.LET -> parseLetStatement tokenH
+  match currentToken.typeOfToken with
+  | Lex.LET ->
+      parseLetStatement tokenH
+  | Lex.INT -> parseExpressionStatement tokenH
+  
+      parseExpression tokenH
