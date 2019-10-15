@@ -1,4 +1,5 @@
 open Base
+open Core
 
 type tokenType =
   | ILLEGAL
@@ -23,6 +24,52 @@ type tokenType =
   | RETURN
 
 type token = {typeOfToken: tokenType; literal: string}
+
+let tokentype_to_string (tokentype : tokenType) : string =
+  match tokentype with
+  | ILLEGAL ->
+      "ILLEGAL"
+  | EOF ->
+      "EOF"
+  | IDENT ->
+      "IDENT"
+  | INT ->
+      "INT"
+  | ASSIGN ->
+      "ASSIGN"
+  | PLUS ->
+      "PLUS"
+  | MUL ->
+      "MUL"
+  | COMMA ->
+      "COMMA"
+  | SEMICOLON ->
+      "SEMICOLON"
+  | LPAREN ->
+      "LPAREN"
+  | RPAREN ->
+      "RPAREN"
+  | LBRACE ->
+      "LBRACE"
+  | RBRACE ->
+      "RBRACE"
+  | FUNCTION ->
+      "FUNCTION"
+  | LET ->
+      "LET"
+  | TRUE ->
+      "TRUE"
+  | FALSE ->
+      "FALSE"
+  | IF ->
+      "IF"
+  | ELSE ->
+      "ELSE"
+  | RETURN ->
+      "RETURN"
+
+let token_to_string (tok : token) : string =
+  tokentype_to_string tok.typeOfToken ^ tok.literal
 
 type lexer =
   { input: string
@@ -94,7 +141,7 @@ let rec readUntil (lex : lexer) (fn : char -> bool) : lexer =
 let readIdentifier (lex : lexer) (fn : char -> bool) : lexerAndString =
   let pos = lex.position in
   let newlex = readUntil lex fn in
-  let substring = String.sub newlex.input pos (newlex.position - pos) in
+  let substring = String.sub newlex.input ~pos ~len:(newlex.position - pos) in
   {string= substring; lexer= newlex}
 
 let lookupIdent (literal : string) (lex : lexer) : tokenType =
