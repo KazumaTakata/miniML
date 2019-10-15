@@ -62,7 +62,7 @@ let getBindingPower (token : Lex.token) : int =
 let genAstTerminalNode (token : Lex.token) : astExpressionNode =
   match token.typeOfToken with
   | Lex.INT ->
-      AstNumberNode (Pervasives.int_of_string token.literal)
+      AstNumberNode (Stdlib.int_of_string token.literal)
   | Lex.IDENT ->
       AstIdentNode {value= token.literal}
 
@@ -91,7 +91,7 @@ and parseExpression (tokenH : tokenHolder) (rbp : int) :
     let tokenH = advanceToken tokenH in
     match curtoken.typeOfToken with
     | Lex.INT ->
-        (AstNumberNode (Pervasives.int_of_string curtoken.literal), tokenH)
+        (AstNumberNode (Stdlib.int_of_string curtoken.literal), tokenH)
     | Lex.IDENT ->
         (AstIdentNode {value= curtoken.literal}, tokenH)
     | _ ->
@@ -122,4 +122,6 @@ let parse (tokenH : tokenHolder) : astStatementNode =
   | Lex.LET ->
       parseLetStatement tokenH
   | Lex.INT ->
+      parseExpressionStatement tokenH
+  | Lex.IDENT ->
       parseExpressionStatement tokenH

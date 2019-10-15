@@ -42,11 +42,23 @@ let evalInfix (optype : Lex.tokenType) (evalleft : evalObject)
   | Lex.MUL ->
       evalMul evalleft evalright
 
+let evalIdent (ident : Parse.astIdentifierNode) (env : evalEnvironment) :
+    evalObjectAndEnv =
+  let objopt = List.Assoc.find ~equal:String.equal env.table ident.value in
+  match objopt with
+  | None ->
+      failwith "No timezone provided"
+  | Some x ->
+      (x, env)
+
 let rec evalExpression (node : Parse.astExpressionNode) (env : evalEnvironment)
     : evalObjectAndEnv =
   match node with
   | AstNumberNode x ->
       (EvalIntObject x, env)
+  | AstIdentNode x ->
+      let obj, env = evalIdent x env in
+      (obj, env)
   | AstInfixNode (optoken, astExpleft, astExpright) ->
       let evalleft, env = evalExpression astExpleft env in
       let evalright, env = evalExpression astExpright env in

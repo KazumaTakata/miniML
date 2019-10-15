@@ -4,7 +4,7 @@ let setTermColor =
   Out_channel.output_string stdout "\027[31m" ;
   Out_channel.flush stdout
 
-let rec mainLoop (env : Eval.evalEnvironment) =
+let rec mainLoop (_ : string) =
   setTermColor ;
   Out_channel.output_string stdout "type in command\n--------\n" ;
   Out_channel.flush stdout ;
@@ -12,11 +12,11 @@ let rec mainLoop (env : Eval.evalEnvironment) =
   | None ->
       failwith "No timezone provided"
   | Some x ->
-      let ee = Parse.getTokenList x in
-      let parsed = Parse.parse ee in
-      let obj, env = Eval.evalStatement parsed env in
-      Eval.inspectObject obj ; mainLoop env
+      let ee = Lex.newLexer x in
+      let tokenlist_lexer = Lex.tokenize {tokenlist= []; lexer= ee} in
+      let str = Lex.tokenlist_to_string tokenlist_lexer.tokenlist in
+      Out_channel.output_string stdout str ;
+      Out_channel.flush stdout ;
+      mainLoop ""
 
-let () =
-  let env = Eval.genEnvironment in
-  mainLoop env
+let () = mainLoop ""

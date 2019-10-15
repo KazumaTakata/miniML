@@ -69,7 +69,14 @@ let tokentype_to_string (tokentype : tokenType) : string =
       "RETURN"
 
 let token_to_string (tok : token) : string =
-  tokentype_to_string tok.typeOfToken ^ tok.literal
+  "{ " ^ tokentype_to_string tok.typeOfToken ^ "," ^ tok.literal ^ " }\n"
+
+let rec tokenlist_to_string (toklist : token list) : string =
+  match toklist with
+  | [] ->
+      ""
+  | hd :: tl ->
+      token_to_string hd ^ tokenlist_to_string tl
 
 type lexer =
   { input: string
