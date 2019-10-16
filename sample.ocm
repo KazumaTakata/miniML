@@ -1,0 +1,7 @@
+
+fn sample(){
+  let ee = 343;
+}
+
+let x = 3.343 + 2;
+
