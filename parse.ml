@@ -15,6 +15,10 @@ type astStatementNode =
   | AstLetNode of astLetNode
   | AstReturnNode of astReturnNode
   | AstExpressionNode of astExpressionNode
+  | AstFunctionNode of astFunctionNode
+
+and astFunctionNode =
+  astIdentifierNode * astIdentifierNode list * astStatementNode list
 
 type astProgramNode = astStatementNode list
 
@@ -104,19 +108,61 @@ and parseExpression (tokenH : tokenHolder) (rbp : int) :
     let lbp = getBindingPower operator in
     foldl rbp lbp left tokenH
 
-let parseLetStatement (tokenH : tokenHolder) : astStatementNode =
+let parseLetStatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.LET in
   let ident = getCurToken tokenH in
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.IDENT in
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.ASSIGN in
   let value, tokenH = parseExpression tokenH 0 in
-  AstLetNode ({value= ident.literal}, value)
+  (AstLetNode ({value= ident.literal}, value), tokenH)
 
-let parseExpressionStatement (tokenH : tokenHolder) : astStatementNode =
+let parseExpressionStatement (tokenH : tokenHolder) :
+    astStatementNode * tokenHolder =
   let astexpressionnode, tokenH = parseExpression tokenH 0 in
-  AstExpressionNode astexpressionnode
+  (AstExpressionNode astexpressionnode, tokenH)
 
-let parse (tokenH : tokenHolder) : astStatementNode =
+let rec parseFuncArgument (tokenH : tokenHolder)
+    (arglist : astIdentifierNode list) : astIdentifierNode list * tokenHolder =
+  let curtoken = getCurToken tokenH in
+  let tokenH = advanceToken tokenH in
+  match curtoken.typeOfToken with
+  | Lex.IDENT ->
+      let arg : astIdentifierNode = {value= curtoken.literal} in
+      let arglist = arglist @ [arg] in
+      parseFuncArgument tokenH arglist
+  | Lex.COMMA ->
+      parseFuncArgument tokenH arglist
+  | Lex.RPAREN ->
+      (arglist, tokenH)
+
+let rec parseFuncBody (tokenH : tokenHolder)
+    (statements : astStatementNode list) : astStatementNode list * tokenHolder
+    =
+  let curtoken = getCurToken tokenH in
+  match curtoken.typeOfToken with
+  | Lex.RBRACE ->
+      (statements, tokenH)
+  | _ ->
+      let parsedstatement, tokenH = parseStatement tokenH in
+      parseFuncBody tokenH (statements @ [parsedstatement])
+
+and parseFunctionStatement (tokenH : tokenHolder) :
+    astStatementNode * tokenHolder =
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.FUNCTION in
+  let ident = getCurToken tokenH in
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.IDENT in
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.LPAREN in
+  let arglist, tokenH = parseFuncArgument tokenH [] in
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.RPAREN in
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.LBRACE in
+  let body, tokenH = parseFuncBody tokenH [] in
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.RBRACE in
+  let astfunctionnode : astFunctionNode =
+    ({value= ident.literal}, arglist, body)
+  in
+  (AstFunctionNode astfunctionnode, tokenH)
+
+and parseStatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
   let currentToken = getCurToken tokenH in
   match currentToken.typeOfToken with
   | Lex.LET ->
@@ -125,3 +171,5 @@ let parse (tokenH : tokenHolder) : astStatementNode =
       parseExpressionStatement tokenH
   | Lex.IDENT ->
       parseExpressionStatement tokenH
+  | Lex.FUNCTION ->
+      parseFunctionStatement tokenH

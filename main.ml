@@ -13,7 +13,7 @@ let rec mainLoop (env : Eval.evalEnvironment) =
       failwith "No timezone provided"
   | Some x ->
       let ee = Parse.getTokenList x in
-      let parsed = Parse.parse ee in
+      let parsed = Parse.parseStatement ee in
       let obj, env = Eval.evalStatement parsed env in
       Eval.inspectObject obj ; mainLoop env
 
