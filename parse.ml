@@ -93,6 +93,7 @@ and parseExpression (tokenH : tokenHolder) (rbp : int) :
   if peekTokenIs tokenH Lex.SEMICOLON then
     let curtoken = getCurToken tokenH in
     let tokenH = advanceToken tokenH in
+    let tokenH = advanceToken tokenH in
     match curtoken.typeOfToken with
     | Lex.INT ->
         (AstNumberNode (Stdlib.int_of_string curtoken.literal), tokenH)
@@ -115,6 +116,12 @@ let parseLetStatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.ASSIGN in
   let value, tokenH = parseExpression tokenH 0 in
   (AstLetNode ({value= ident.literal}, value), tokenH)
+
+let parseReturnStatement (tokenH : tokenHolder) :
+    astStatementNode * tokenHolder =
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.RETURN in
+  let expression, tokenH = parseExpression tokenH 0 in
+  (AstReturnNode {value= expression}, tokenH)
 
 let parseExpressionStatement (tokenH : tokenHolder) :
     astStatementNode * tokenHolder =
@@ -153,7 +160,6 @@ and parseFunctionStatement (tokenH : tokenHolder) :
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.IDENT in
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.LPAREN in
   let arglist, tokenH = parseFuncArgument tokenH [] in
-  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.RPAREN in
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.LBRACE in
   let body, tokenH = parseFuncBody tokenH [] in
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.RBRACE in
@@ -167,9 +173,19 @@ and parseStatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
   match currentToken.typeOfToken with
   | Lex.LET ->
       parseLetStatement tokenH
+  | Lex.RETURN ->
+      parseReturnStatement tokenH
   | Lex.INT ->
       parseExpressionStatement tokenH
   | Lex.IDENT ->
       parseExpressionStatement tokenH
   | Lex.FUNCTION ->
       parseFunctionStatement tokenH
+
+let rec parseStatements (tokenH : tokenHolder)
+    (statements : astStatementNode list) : astStatementNode list * tokenHolder
+    =
+  if List.length tokenH.tokenlist <= tokenH.pos then (statements, tokenH)
+  else
+    let parsedstatement, tokenH = parseStatement tokenH in
+    parseStatements tokenH (statements @ [parsedstatement])
