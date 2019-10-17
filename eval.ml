@@ -1,7 +1,11 @@
 open Base
 open Core
 
-type evalObject = EvalIntObject of int | EvalBoolObject of bool
+type evalObject =
+  | EvalIntObject of int
+  | EvalBoolObject of bool
+  | EvalFuncObject of
+      Parse.astIdentifierNode list * Parse.astStatementNode list
 
 type objectType = INT_OBJ | BOOL_OBJ
 
@@ -20,6 +24,8 @@ let inspectObject (obj : evalObject) =
       printf "%d\n" x
   | EvalBoolObject x ->
       printf "%b\n" x
+  | EvalFuncObject (args, statements) ->
+      printf "func defined"
 
 (*let evalLet (node: astLetNode) : evalObject = *)
 (*let ident, express = node in*)
@@ -73,6 +79,15 @@ let rec evalLet (node : Parse.astLetNode) (env : evalEnvironment) :
   in
   (expressionObj, {table})
 
+let evalFunc (node : Parse.astFunctionNode) (env : evalEnvironment) :
+    evalObjectAndEnv =
+  let ident, arglist, statements = node in
+  let funcObj = EvalFuncObject (arglist, statements) in
+  let table =
+    List.Assoc.add ~equal:String.equal env.table ident.value funcObj
+  in
+  (funcObj, {table})
+
 let rec evalStatement (node : Parse.astStatementNode) (env : evalEnvironment) :
     evalObjectAndEnv =
   match node with
@@ -80,6 +95,8 @@ let rec evalStatement (node : Parse.astStatementNode) (env : evalEnvironment) :
       evalExpression node env
   | AstLetNode node ->
       evalLet node env
+  | AstFunctionNode node ->
+      evalFunc node env
 
 let genEnvironment : evalEnvironment =
   let symboltable : symbolTable = [] in
