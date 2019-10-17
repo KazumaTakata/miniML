@@ -2,6 +2,7 @@ open Base
 open Core
 
 type evalObject =
+  | Nil
   | EvalIntObject of int
   | EvalBoolObject of bool
   | EvalFuncObject of
@@ -11,7 +12,7 @@ type objectType = INT_OBJ | BOOL_OBJ
 
 type symbolTable = (string * evalObject) list
 
-type evalEnvironment = {table: symbolTable}
+type evalEnvironment = Nil | EvalEnvironment of symbolTable * evalEnvironment
 
 type evalObjectAndEnv = evalObject * evalEnvironment
 
@@ -29,6 +30,23 @@ let inspectObject (obj : evalObject) =
 
 (*let evalLet (node: astLetNode) : evalObject = *)
 (*let ident, express = node in*)
+
+let findInEnv (env : evalEnvironment) (key : string) : evalObject =
+  match env with
+  | Nil ->
+      failwith ""
+  | EvalEnvironment (table, parent_env) -> (
+      let objopt = List.Assoc.find ~equal:String.equal table key in
+      match objopt with None -> failwith "No timezone provided" | Some x -> x )
+
+let addInEnv (env : evalEnvironment) (key : string) (obj : evalObject) :
+    evalEnvironment =
+  match env with
+  | Nil ->
+      failwith ""
+  | EvalEnvironment (table, parent_env) ->
+      let table = List.Assoc.add ~equal:String.equal table key obj in
+      EvalEnvironment (table, parent_env)
 
 let evalPlus (evalleft : evalObject) (evalright : evalObject) : evalObject =
   match (evalleft, evalright) with
@@ -50,12 +68,37 @@ let evalInfix (optype : Lex.tokenType) (evalleft : evalObject)
 
 let evalIdent (ident : Parse.astIdentifierNode) (env : evalEnvironment) :
     evalObjectAndEnv =
-  let objopt = List.Assoc.find ~equal:String.equal env.table ident.value in
-  match objopt with
-  | None ->
-      failwith "No timezone provided"
-  | Some x ->
-      (x, env)
+  let obj = findInEnv env ident.value in
+  (obj, env)
+
+let getParentEnv (env : evalEnvironment) : evalEnvironment =
+  match env with
+  | EvalEnvironment (symbol, parent_env) ->
+      parent_env
+  | Nil ->
+      failwith ""
+
+let rec evalFuncBody (nodes : Parse.astProgramNode) (env : evalEnvironment) :
+    evalObjectAndEnv =
+  match nodes with
+  | [hd] -> (
+    match hd with
+    | AstReturnNode express ->
+        let obj, env = evalStatement hd env in
+        let env = getParentEnv env in
+        (obj, env)
+    | _ ->
+        let obj, env = evalStatement hd env in
+        (Nil, env)
+    | hd :: tl -> (
+      match hd with
+      | AstReturnNode express ->
+          let obj, env = evalStatement hd env in
+          let env = getParentEnv env in
+          (obj, env)
+      | _ ->
+          let obj, env = evalStatement hd env in
+          evalFuncBody tl env ) )
 
 let rec evalExpression (node : Parse.astExpressionNode) (env : evalEnvironment)
     : evalObjectAndEnv =
@@ -69,24 +112,28 @@ let rec evalExpression (node : Parse.astExpressionNode) (env : evalEnvironment)
       let evalleft, env = evalExpression astExpleft env in
       let evalright, env = evalExpression astExpright env in
       (evalInfix optoken evalleft evalright, env)
+  | AstFuncCallNode (ident, arglist) -> (
+      let funcObj = findInEnv env ident.value in
+      match funcObj with
+      | EvalFuncObject (argparas, statements) ->
+          let symboltable : symbolTable = [] in
+          let env = EvalEnvironment (symboltable, env) in
+          let obj, env = evalFuncBody statements env in
+          (obj, env) )
 
 let rec evalLet (node : Parse.astLetNode) (env : evalEnvironment) :
     evalObjectAndEnv =
   let ident, expression = node in
   let expressionObj, env = evalExpression expression env in
-  let table =
-    List.Assoc.add ~equal:String.equal env.table ident.value expressionObj
-  in
-  (expressionObj, {table})
+  let env = addInEnv env ident.value expressionObj in
+  (expressionObj, env)
 
 let evalFunc (node : Parse.astFunctionNode) (env : evalEnvironment) :
     evalObjectAndEnv =
   let ident, arglist, statements = node in
   let funcObj = EvalFuncObject (arglist, statements) in
-  let table =
-    List.Assoc.add ~equal:String.equal env.table ident.value funcObj
-  in
-  (funcObj, {table})
+  let env = addInEnv env ident.value funcObj in
+  (funcObj, env)
 
 let rec evalStatement (node : Parse.astStatementNode) (env : evalEnvironment) :
     evalObjectAndEnv =
@@ -100,8 +147,14 @@ let rec evalStatement (node : Parse.astStatementNode) (env : evalEnvironment) :
 
 let genEnvironment : evalEnvironment =
   let symboltable : symbolTable = [] in
-  {table= symboltable}
+  EvalEnvironment (symboltable, Nil)
 
 let rec evalProgram (node : Parse.astProgramNode) (env : evalEnvironment) :
     evalObjectAndEnv =
-  match node with hd :: tl -> evalStatement hd env
+  match node with
+  | [hd] ->
+      let obj, env = evalStatement hd env in
+      (obj, env)
+  | hd :: tl ->
+      let obj, env = evalStatement hd env in
+      evalProgram tl env

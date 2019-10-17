@@ -6,5 +6,5 @@ fn sample(){
 
 
 
-let ee  = sample(x) + 34;
+let ee  = 32 + 34;
 let x = ee * 4;
