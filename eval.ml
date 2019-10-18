@@ -125,6 +125,19 @@ and evalStatement (node : Parse.astStatementNode) (env : evalEnvironment) :
       evalFunc node env
   | AstReturnNode node ->
       evalExpression node.value env
+  | AstIfNode node ->
+      evalIf node env
+
+and evalIf (node : Parse.astIfNode) (env : evalEnvironment) : evalObjectAndEnv
+    =
+  let boolexp, statements = node in
+  let boolobj, env = evalExpression boolexp env in
+  match boolobj with
+  | EvalBoolObject true ->
+      let obj, env = evalStatements statements env in
+      (obj, env)
+  | EvalBoolObject false ->
+      (Nil, env)
 
 and evalExpression (node : Parse.astExpressionNode) (env : evalEnvironment) :
     evalObjectAndEnv =
@@ -178,11 +191,7 @@ and evalFuncBody (nodes : Parse.astProgramNode) (env : evalEnvironment) :
         let obj, env = evalStatement hd env in
         evalFuncBody tl env )
 
-let genEnvironment : evalEnvironment =
-  let symboltable : symbolTable = [] in
-  EvalEnvironment (symboltable, Nil)
-
-let rec evalProgram (node : Parse.astProgramNode) (env : evalEnvironment) :
+and evalStatements (node : Parse.astProgramNode) (env : evalEnvironment) :
     evalObjectAndEnv =
   match node with
   | [hd] ->
@@ -190,4 +199,8 @@ let rec evalProgram (node : Parse.astProgramNode) (env : evalEnvironment) :
       (obj, env)
   | hd :: tl ->
       let obj, env = evalStatement hd env in
-      evalProgram tl env
+      evalStatements tl env
+
+let genEnvironment : evalEnvironment =
+  let symboltable : symbolTable = [] in
+  EvalEnvironment (symboltable, Nil)

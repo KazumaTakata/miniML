@@ -229,7 +229,8 @@ and parseIfstatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
   let astifnode : astIfNode = (astexp, astBody) in
   (AstIfNode astifnode, tokenH)
 
-(*  dd| Lex.IF ->*)
+
+
 
 let rec parseStatements (tokenH : tokenHolder)
     (statements : astStatementNode list) : astStatementNode list * tokenHolder
