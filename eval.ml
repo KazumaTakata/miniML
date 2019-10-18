@@ -58,6 +58,16 @@ let evalMul (evalleft : evalObject) (evalright : evalObject) : evalObject =
   | EvalIntObject x, EvalIntObject y ->
       EvalIntObject (x * y)
 
+let evalGT (evalleft : evalObject) (evalright : evalObject) : evalObject =
+  match (evalleft, evalright) with
+  | EvalIntObject x, EvalIntObject y ->
+      EvalBoolObject (x > y)
+
+let evalLT (evalleft : evalObject) (evalright : evalObject) : evalObject =
+  match (evalleft, evalright) with
+  | EvalIntObject x, EvalIntObject y ->
+      EvalBoolObject (x < y)
+
 let evalInfix (optype : Lex.tokenType) (evalleft : evalObject)
     (evalright : evalObject) : evalObject =
   match optype with
@@ -65,6 +75,10 @@ let evalInfix (optype : Lex.tokenType) (evalleft : evalObject)
       evalPlus evalleft evalright
   | Lex.MUL ->
       evalMul evalleft evalright
+  | Lex.GT ->
+      evalGT evalleft evalright
+  | Lex.LT ->
+      evalLT evalleft evalright
 
 let evalIdent (ident : Parse.astIdentifierNode) (env : evalEnvironment) :
     evalObjectAndEnv =

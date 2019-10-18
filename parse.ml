@@ -63,6 +63,10 @@ let getBindingPower (token : Lex.token) : int =
       10
   | Lex.MUL ->
       20
+  | Lex.GT ->
+      5
+  | Lex.LT ->
+      5
   | Lex.SEMICOLON ->
       0
 
@@ -135,21 +139,15 @@ and foldl (rbp : int) (lbp : int) (left : astExpressionNode)
 
 and parseExpression (tokenH : tokenHolder) (rbp : int) :
     expressionNodeAndTokenHolder =
-  if peekTokenIs tokenH Lex.SEMICOLON then
-    let curtoken = getCurToken tokenH in
-    if rbp = 0 then
-      let express, tokenH = genAstTerminalNode curtoken tokenH in
-      let tokenH = advanceToken tokenH in
-      (express, tokenH)
-    else genAstTerminalNode curtoken tokenH
-  else
-    let curtoken = getCurToken tokenH in
-    let left, tokenH = genAstTerminalNode curtoken tokenH in
-    let operator = getCurToken tokenH in
-    let lbp = getBindingPower operator in
-    let expression, tokenH = foldl rbp lbp left tokenH in
+  let curtoken = getCurToken tokenH in
+  let left, tokenH = genAstTerminalNode curtoken tokenH in
+  let operator = getCurToken tokenH in
+  let lbp = getBindingPower operator in
+  let expression, tokenH = foldl rbp lbp left tokenH in
+  if rbp = 0 then
     let tokenH = tokenTypeAssertAndAdvance tokenH Lex.SEMICOLON in
     (expression, tokenH)
+  else (expression, tokenH)
 
 let parseLetStatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.LET in

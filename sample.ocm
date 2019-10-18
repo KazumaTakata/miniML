@@ -9,3 +9,6 @@ fn sample(ee, a){
 
 let ee  = 32 + 34;
 let x = sample(5, 10);
+
+x;
+

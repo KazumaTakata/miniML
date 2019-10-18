@@ -9,6 +9,8 @@ type tokenType =
   | ASSIGN
   | PLUS
   | MUL
+  | GT
+  | LT
   | COMMA
   | SEMICOLON
   | LPAREN
@@ -41,6 +43,10 @@ let tokentype_to_string (tokentype : tokenType) : string =
       "PLUS"
   | MUL ->
       "MUL"
+  | GT ->
+      "GT"
+  | LT ->
+      "LT"
   | COMMA ->
       "COMMA"
   | SEMICOLON ->
@@ -181,6 +187,14 @@ let nextToken (lex : lexer) : tokenAndLexer =
   | '+' ->
       newTokenAndLexer
         {typeOfToken= PLUS; literal= Char.escaped newlex.ch}
+        (readChar newlex)
+  | '>' ->
+      newTokenAndLexer
+        {typeOfToken= GT; literal= Char.escaped newlex.ch}
+        (readChar newlex)
+  | '<' ->
+      newTokenAndLexer
+        {typeOfToken= LT; literal= Char.escaped newlex.ch}
         (readChar newlex)
   | '*' ->
       newTokenAndLexer
