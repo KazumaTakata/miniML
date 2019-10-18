@@ -24,6 +24,7 @@ type tokenType =
   | IF
   | ELSE
   | RETURN
+  | FOR
 
 type token = {typeOfToken: tokenType; literal: string}
 
@@ -73,6 +74,8 @@ let tokentype_to_string (tokentype : tokenType) : string =
       "ELSE"
   | RETURN ->
       "RETURN"
+  | FOR ->
+      "FOR"
 
 let token_to_string (tok : token) : string =
   "{ " ^ tokentype_to_string tok.typeOfToken ^ "," ^ tok.literal ^ " }\n"
@@ -112,7 +115,8 @@ let newLexer input_code =
       ; ("false", FALSE)
       ; ("if", IF)
       ; ("else", ELSE)
-      ; ("return", RETURN) ] }
+      ; ("return", RETURN)
+      ; ("for", FOR) ] }
 
 let readChar (lex : lexer) : lexer =
   if lex.readPosition >= String.length lex.input then

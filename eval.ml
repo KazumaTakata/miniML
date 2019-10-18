@@ -121,12 +121,37 @@ and evalStatement (node : Parse.astStatementNode) (env : evalEnvironment) :
       evalExpression node env
   | AstLetNode node ->
       evalLet node env
+  | AstAssignNode node ->
+      evalAssign node env
   | AstFunctionNode node ->
       evalFunc node env
   | AstReturnNode node ->
       evalExpression node.value env
   | AstIfNode node ->
       evalIf node env
+  | AstForNode node ->
+      evalFor node env
+
+and evalFor (node : Parse.astForNode) (env : evalEnvironment) :
+    evalObjectAndEnv =
+  let initstmt, condexp, updatestmt, statements = node in
+  let _, env = evalStatement initstmt env in
+  let _, env = evalForloop condexp updatestmt statements env in
+  (Nil, env)
+
+and evalForloop (cond : Parse.astExpressionNode)
+    (updatestmt : Parse.astStatementNode)
+    (statements : Parse.astStatementNode list) (env : evalEnvironment) :
+    evalObjectAndEnv =
+  let boolobj, env = evalExpression cond env in
+  match boolobj with
+  | EvalBoolObject true ->
+      let obj, env = evalStatement updatestmt env in
+      let obj, env = evalStatements statements env in
+      let obj, env = evalForloop cond updatestmt statements env in
+      (Nil, env)
+  | EvalBoolObject false ->
+      (Nil, env)
 
 and evalIf (node : Parse.astIfNode) (env : evalEnvironment) : evalObjectAndEnv
     =
@@ -162,6 +187,13 @@ and evalExpression (node : Parse.astExpressionNode) (env : evalEnvironment) :
           (obj, env) )
 
 and evalLet (node : Parse.astLetNode) (env : evalEnvironment) :
+    evalObjectAndEnv =
+  let ident, expression = node in
+  let expressionObj, env = evalExpression expression env in
+  let env = addInEnv env ident.value expressionObj in
+  (expressionObj, env)
+
+and evalAssign (node : Parse.astAssignNode) (env : evalEnvironment) :
     evalObjectAndEnv =
   let ident, expression = node in
   let expressionObj, env = evalExpression expression env in

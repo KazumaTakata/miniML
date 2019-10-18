@@ -12,6 +12,8 @@ and astFuncCallNode = astIdentifierNode * astExpressionNode list
 
 type astLetNode = astIdentifierNode * astExpressionNode
 
+type astAssignNode = astIdentifierNode * astExpressionNode
+
 type astReturnNode = {value: astExpressionNode}
 
 type astStatementNode =
@@ -20,11 +22,19 @@ type astStatementNode =
   | AstExpressionNode of astExpressionNode
   | AstFunctionNode of astFunctionNode
   | AstIfNode of astIfNode
+  | AstAssignNode of astAssignNode
+  | AstForNode of astForNode
 
 and astFunctionNode =
   astIdentifierNode * astIdentifierNode list * astStatementNode list
 
 and astIfNode = astExpressionNode * astStatementNode list
+
+and astForNode =
+  astStatementNode
+  * astExpressionNode
+  * astStatementNode
+  * astStatementNode list
 
 type astProgramNode = astStatementNode list
 
@@ -165,6 +175,14 @@ let parseLetStatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
   let value, tokenH = parseExpression tokenH 0 in
   (AstLetNode ({value= ident.literal}, value), tokenH)
 
+let parseAssignStatement (tokenH : tokenHolder) :
+    astStatementNode * tokenHolder =
+  let ident = getCurToken tokenH in
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.IDENT in
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.ASSIGN in
+  let value, tokenH = parseExpression tokenH 0 in
+  (AstAssignNode ({value= ident.literal}, value), tokenH)
+
 let parseReturnStatement (tokenH : tokenHolder) :
     astStatementNode * tokenHolder =
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.RETURN in
@@ -204,21 +222,38 @@ and parseFunctionStatement (tokenH : tokenHolder) :
 
 and parseStatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
   let currentToken = getCurToken tokenH in
-  match currentToken.typeOfToken with
-  | Lex.LET ->
-      parseLetStatement tokenH
-  | Lex.RETURN ->
-      parseReturnStatement tokenH
-  | Lex.INT ->
-      parseExpressionStatement tokenH
-  | Lex.IDENT ->
-      parseExpressionStatement tokenH
-  | Lex.FUNCTION ->
-      parseFunctionStatement tokenH
-  | Lex.IF ->
-      parseIfstatement tokenH
+  if peekTokenIs tokenH Lex.ASSIGN then parseAssignStatement tokenH
+  else
+    match currentToken.typeOfToken with
+    | Lex.LET ->
+        parseLetStatement tokenH
+    | Lex.RETURN ->
+        parseReturnStatement tokenH
+    | Lex.INT ->
+        parseExpressionStatement tokenH
+    | Lex.IDENT ->
+        parseExpressionStatement tokenH
+    | Lex.FUNCTION ->
+        parseFunctionStatement tokenH
+    | Lex.IF ->
+        parseIfStatement tokenH
+    | Lex.FOR ->
+        parseForStatement tokenH
 
-and parseIfstatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
+and parseForStatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.FOR in
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.LPAREN in
+  let initExp, tokenH = parseStatement tokenH in
+  let condExp, tokenH = parseExpression tokenH 0 in
+  let updataExp, tokenH = parseStatement tokenH in
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.RPAREN in
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.LBRACE in
+  let astBody, tokenH = parseFuncBody tokenH [] in
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.RBRACE in
+  let astfornode : astForNode = (initExp, condExp, updataExp, astBody) in
+  (AstForNode astfornode, tokenH)
+
+and parseIfStatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.IF in
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.LPAREN in
   let astexp, tokenH = parseExpression tokenH 0 in
@@ -228,9 +263,6 @@ and parseIfstatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.RBRACE in
   let astifnode : astIfNode = (astexp, astBody) in
   (AstIfNode astifnode, tokenH)
-
-
-
 
 let rec parseStatements (tokenH : tokenHolder)
     (statements : astStatementNode list) : astStatementNode list * tokenHolder
