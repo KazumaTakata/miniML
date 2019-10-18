@@ -78,30 +78,27 @@ let getParentEnv (env : evalEnvironment) : evalEnvironment =
   | Nil ->
       failwith ""
 
-let rec evalFuncBody (nodes : Parse.astProgramNode) (env : evalEnvironment) :
+let evalFunc (node : Parse.astFunctionNode) (env : evalEnvironment) :
     evalObjectAndEnv =
-  match nodes with
-  | [hd] -> (
-    match hd with
-    | AstReturnNode express ->
-        let obj, env = evalStatement hd env in
-        let env = getParentEnv env in
-        (obj, env)
-    | _ ->
-        let obj, env = evalStatement hd env in
-        (Nil, env)
-    | hd :: tl -> (
-      match hd with
-      | AstReturnNode express ->
-          let obj, env = evalStatement hd env in
-          let env = getParentEnv env in
-          (obj, env)
-      | _ ->
-          let obj, env = evalStatement hd env in
-          evalFuncBody tl env ) )
+  let ident, arglist, statements = node in
+  let funcObj = EvalFuncObject (arglist, statements) in
+  let env = addInEnv env ident.value funcObj in
+  (funcObj, env)
 
-let rec evalExpression (node : Parse.astExpressionNode) (env : evalEnvironment)
-    : evalObjectAndEnv =
+let rec evalStatement (node : Parse.astStatementNode) (env : evalEnvironment) :
+    evalObjectAndEnv =
+  match node with
+  | AstExpressionNode node ->
+      evalExpression node env
+  | AstLetNode node ->
+      evalLet node env
+  | AstFunctionNode node ->
+      evalFunc node env
+  | AstReturnNode node ->
+      evalExpression node.value env
+
+and evalExpression (node : Parse.astExpressionNode) (env : evalEnvironment) :
+    evalObjectAndEnv =
   match node with
   | AstNumberNode x ->
       (EvalIntObject x, env)
@@ -121,29 +118,35 @@ let rec evalExpression (node : Parse.astExpressionNode) (env : evalEnvironment)
           let obj, env = evalFuncBody statements env in
           (obj, env) )
 
-let rec evalLet (node : Parse.astLetNode) (env : evalEnvironment) :
+and evalLet (node : Parse.astLetNode) (env : evalEnvironment) :
     evalObjectAndEnv =
   let ident, expression = node in
   let expressionObj, env = evalExpression expression env in
   let env = addInEnv env ident.value expressionObj in
   (expressionObj, env)
 
-let evalFunc (node : Parse.astFunctionNode) (env : evalEnvironment) :
+and evalFuncBody (nodes : Parse.astProgramNode) (env : evalEnvironment) :
     evalObjectAndEnv =
-  let ident, arglist, statements = node in
-  let funcObj = EvalFuncObject (arglist, statements) in
-  let env = addInEnv env ident.value funcObj in
-  (funcObj, env)
-
-let rec evalStatement (node : Parse.astStatementNode) (env : evalEnvironment) :
-    evalObjectAndEnv =
-  match node with
-  | AstExpressionNode node ->
-      evalExpression node env
-  | AstLetNode node ->
-      evalLet node env
-  | AstFunctionNode node ->
-      evalFunc node env
+  match nodes with
+  | [hd] -> (
+    match hd with
+    | AstReturnNode express ->
+        let obj, env = evalStatement hd env in
+        let env = getParentEnv env in
+        (obj, env)
+    | _ ->
+        let obj, env = evalStatement hd env in
+        let env = getParentEnv env in
+        (Nil, env) )
+  | hd :: tl -> (
+    match hd with
+    | AstReturnNode express ->
+        let obj, env = evalStatement hd env in
+        let env = getParentEnv env in
+        (obj, env)
+    | _ ->
+        let obj, env = evalStatement hd env in
+        evalFuncBody tl env )
 
 let genEnvironment : evalEnvironment =
   let symboltable : symbolTable = [] in

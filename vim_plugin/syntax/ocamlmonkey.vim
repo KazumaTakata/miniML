@@ -2,7 +2,7 @@ if exists("b:current_syntax")
         finish
 endif
 
-syntax keyword potionKeyword let fn 
+syntax keyword potionKeyword let fn return 
 highlight link potionKeyword Keyword
 
 

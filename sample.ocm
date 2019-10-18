@@ -1,10 +1,12 @@
 
 fn sample(){
   let ee = 343;
+  let a = ee + 3;
+  return a;
 }
 
 
 
 
 let ee  = 32 + 34;
-let x = ee * 4;
+let x = sample();
