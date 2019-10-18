@@ -85,7 +85,22 @@ let evalFunc (node : Parse.astFunctionNode) (env : evalEnvironment) :
   let env = addInEnv env ident.value funcObj in
   (funcObj, env)
 
-let rec evalStatement (node : Parse.astStatementNode) (env : evalEnvironment) :
+let rec evalArglist (env : evalEnvironment)
+    (argparas : Parse.astIdentifierNode list)
+    (argexps : Parse.astExpressionNode list) (nth : int) : evalEnvironment =
+  if nth >= List.length argparas then env
+  else
+    let ident = List.nth argparas nth in
+    match ident with
+    | Some id -> (
+        let exp = List.nth argexps nth in
+        match exp with
+        | Some exp ->
+            let obj, env = evalExpression exp env in
+            let env = addInEnv env id.value obj in
+            evalArglist env argparas argexps (nth + 1) )
+
+and evalStatement (node : Parse.astStatementNode) (env : evalEnvironment) :
     evalObjectAndEnv =
   match node with
   | AstExpressionNode node ->
@@ -115,6 +130,7 @@ and evalExpression (node : Parse.astExpressionNode) (env : evalEnvironment) :
       | EvalFuncObject (argparas, statements) ->
           let symboltable : symbolTable = [] in
           let env = EvalEnvironment (symboltable, env) in
+          let env = evalArglist env argparas arglist 0 in
           let obj, env = evalFuncBody statements env in
           (obj, env) )
 

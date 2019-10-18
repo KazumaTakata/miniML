@@ -1,7 +1,6 @@
 
-fn sample(){
-  let ee = 343;
-  let a = ee + 3;
+fn sample(ee, a){
+  let a = ee + a;
   return a;
 }
 
@@ -9,4 +8,4 @@ fn sample(){
 
 
 let ee  = 32 + 34;
-let x = sample();
+let x = sample(5, 10);

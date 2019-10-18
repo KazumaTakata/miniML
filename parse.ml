@@ -2,13 +2,13 @@ type tokenHolder = {tokenlist: Lex.token list; pos: int}
 
 type astIdentifierNode = {value: string}
 
-type astFuncCallNode = astIdentifierNode * astIdentifierNode list
-
 type astExpressionNode =
   | AstInfixNode of Lex.tokenType * astExpressionNode * astExpressionNode
   | AstNumberNode of int
   | AstIdentNode of astIdentifierNode
   | AstFuncCallNode of astFuncCallNode
+
+and astFuncCallNode = astIdentifierNode * astExpressionNode list
 
 type astLetNode = astIdentifierNode * astExpressionNode
 
@@ -66,21 +66,7 @@ let getBindingPower (token : Lex.token) : int =
   | Lex.SEMICOLON ->
       0
 
-let rec parseFuncArgument (tokenH : tokenHolder)
-    (arglist : astIdentifierNode list) : astIdentifierNode list * tokenHolder =
-  let curtoken = getCurToken tokenH in
-  let tokenH = advanceToken tokenH in
-  match curtoken.typeOfToken with
-  | Lex.IDENT ->
-      let arg : astIdentifierNode = {value= curtoken.literal} in
-      let arglist = arglist @ [arg] in
-      parseFuncArgument tokenH arglist
-  | Lex.COMMA ->
-      parseFuncArgument tokenH arglist
-  | Lex.RPAREN ->
-      (arglist, tokenH)
-
-let genAstTerminalNode (token : Lex.token) (tokenH : tokenHolder) :
+let rec genAstTerminalNode (token : Lex.token) (tokenH : tokenHolder) :
     astExpressionNode * tokenHolder =
   match token.typeOfToken with
   | Lex.INT ->
@@ -92,13 +78,42 @@ let genAstTerminalNode (token : Lex.token) (tokenH : tokenHolder) :
       match curtoken.typeOfToken with
       | x when x = Lex.LPAREN ->
           let tokenH = tokenTypeAssertAndAdvance tokenH Lex.LPAREN in
-          let arglist, tokenH = parseFuncArgument tokenH [] in
+          let arglist, tokenH = parseFuncCallArgument tokenH [] in
           let astfunccallnode : astFuncCallNode =
             ({value= token.literal}, arglist)
           in
           (AstFuncCallNode astfunccallnode, tokenH)
       | _ ->
           (AstIdentNode {value= token.literal}, tokenH) )
+
+and parseFuncCallArgument (tokenH : tokenHolder)
+    (arglist : astExpressionNode list) : astExpressionNode list * tokenHolder =
+  let curtoken = getCurToken tokenH in
+  match curtoken.typeOfToken with
+  | Lex.IDENT | Lex.INT ->
+      let arg, tokenH = genAstTerminalNode curtoken tokenH in
+      let arglist = arglist @ [arg] in
+      parseFuncCallArgument tokenH arglist
+  | Lex.COMMA ->
+      let tokenH = advanceToken tokenH in
+      parseFuncCallArgument tokenH arglist
+  | Lex.RPAREN ->
+      let tokenH = advanceToken tokenH in
+      (arglist, tokenH)
+
+and parseFuncArgument (tokenH : tokenHolder) (arglist : astIdentifierNode list)
+    : astIdentifierNode list * tokenHolder =
+  let curtoken = getCurToken tokenH in
+  let tokenH = advanceToken tokenH in
+  match curtoken.typeOfToken with
+  | Lex.IDENT ->
+      let arg : astIdentifierNode = {value= curtoken.literal} in
+      let arglist = arglist @ [arg] in
+      parseFuncArgument tokenH arglist
+  | Lex.COMMA ->
+      parseFuncArgument tokenH arglist
+  | Lex.RPAREN ->
+      (arglist, tokenH)
 
 (*mutually recursive function https://ocaml.org/learn/tutorials/labels.html*)
 let rec led (tokenH : tokenHolder) (left : astExpressionNode) :
