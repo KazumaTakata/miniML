@@ -19,9 +19,12 @@ type astStatementNode =
   | AstReturnNode of astReturnNode
   | AstExpressionNode of astExpressionNode
   | AstFunctionNode of astFunctionNode
+  | AstIfNode of astIfNode
 
 and astFunctionNode =
   astIdentifierNode * astIdentifierNode list * astStatementNode list
+
+and astIfNode = astExpressionNode * astStatementNode list
 
 type astProgramNode = astStatementNode list
 
@@ -67,7 +70,7 @@ let getBindingPower (token : Lex.token) : int =
       5
   | Lex.LT ->
       5
-  | Lex.SEMICOLON ->
+  | _ ->
       0
 
 let rec genAstTerminalNode (token : Lex.token) (tokenH : tokenHolder) :
@@ -144,10 +147,15 @@ and parseExpression (tokenH : tokenHolder) (rbp : int) :
   let operator = getCurToken tokenH in
   let lbp = getBindingPower operator in
   let expression, tokenH = foldl rbp lbp left tokenH in
-  if rbp = 0 then
-    let tokenH = tokenTypeAssertAndAdvance tokenH Lex.SEMICOLON in
-    (expression, tokenH)
-  else (expression, tokenH)
+  let curtoken = getCurToken tokenH in
+  match curtoken.typeOfToken with
+  | Lex.SEMICOLON ->
+      if rbp = 0 then
+        let tokenH = tokenTypeAssertAndAdvance tokenH Lex.SEMICOLON in
+        (expression, tokenH)
+      else (expression, tokenH)
+  | _ ->
+      (expression, tokenH)
 
 let parseLetStatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
   let tokenH = tokenTypeAssertAndAdvance tokenH Lex.LET in
@@ -207,6 +215,21 @@ and parseStatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
       parseExpressionStatement tokenH
   | Lex.FUNCTION ->
       parseFunctionStatement tokenH
+  | Lex.IF ->
+      parseIfstatement tokenH
+
+and parseIfstatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.IF in
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.LPAREN in
+  let astexp, tokenH = parseExpression tokenH 0 in
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.RPAREN in
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.LBRACE in
+  let astBody, tokenH = parseFuncBody tokenH [] in
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.RBRACE in
+  let astifnode : astIfNode = (astexp, astBody) in
+  (AstIfNode astifnode, tokenH)
+
+(*  dd| Lex.IF ->*)
 
 let rec parseStatements (tokenH : tokenHolder)
     (statements : astStatementNode list) : astStatementNode list * tokenHolder
