@@ -17,6 +17,8 @@ type tokenType =
   | RPAREN
   | LBRACE
   | RBRACE
+  | LSQUARE
+  | RSQUARE
   | FUNCTION
   | LET
   | TRUE
@@ -60,6 +62,10 @@ let tokentype_to_string (tokentype : tokenType) : string =
       "LBRACE"
   | RBRACE ->
       "RBRACE"
+  | LSQUARE ->
+      "LSQUARE"
+  | RSQUARE ->
+      "RSQUARE"
   | FUNCTION ->
       "FUNCTION"
   | LET ->
@@ -211,6 +217,14 @@ let nextToken (lex : lexer) : tokenAndLexer =
   | '}' ->
       newTokenAndLexer
         {typeOfToken= RBRACE; literal= Char.escaped newlex.ch}
+        (readChar newlex)
+  | '[' ->
+      newTokenAndLexer
+        {typeOfToken= LSQUARE; literal= Char.escaped newlex.ch}
+        (readChar newlex)
+  | ']' ->
+      newTokenAndLexer
+        {typeOfToken= RSQUARE; literal= Char.escaped newlex.ch}
         (readChar newlex)
   | '\x00' ->
       newTokenAndLexer

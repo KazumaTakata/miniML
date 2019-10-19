@@ -7,8 +7,11 @@ type astExpressionNode =
   | AstNumberNode of int
   | AstIdentNode of astIdentifierNode
   | AstFuncCallNode of astFuncCallNode
+  | AstListNode of astListNode
 
 and astFuncCallNode = astIdentifierNode * astExpressionNode list
+
+and astListNode = astExpressionNode list
 
 type astLetNode = astIdentifierNode * astExpressionNode
 
@@ -132,6 +135,17 @@ and parseFuncArgument (tokenH : tokenHolder) (arglist : astIdentifierNode list)
   | Lex.RPAREN ->
       (arglist, tokenH)
 
+let handleSEMICOLON (tokenH : tokenHolder) (rbp : int) : tokenHolder =
+  let curtoken = getCurToken tokenH in
+  match curtoken.typeOfToken with
+  | Lex.SEMICOLON ->
+      if rbp = 0 then
+        let tokenH = tokenTypeAssertAndAdvance tokenH Lex.SEMICOLON in
+        tokenH
+      else tokenH
+  | _ ->
+      tokenH
+
 (*mutually recursive function https://ocaml.org/learn/tutorials/labels.html*)
 let rec led (tokenH : tokenHolder) (left : astExpressionNode) :
     expressionNodeAndTokenHolder =
@@ -150,21 +164,38 @@ and foldl (rbp : int) (lbp : int) (left : astExpressionNode)
     foldl rbp lbp left tokenH
   else (left, tokenH)
 
+and parseList (tokenH : tokenHolder) : astExpressionNode * tokenHolder =
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.LSQUARE in
+  let explist, tokenH = parseListElement tokenH [] in
+  (AstListNode explist, tokenH)
+
+and parseListElement (tokenH : tokenHolder)
+    (astexpressions : astExpressionNode list) :
+    astExpressionNode list * tokenHolder =
+  let astExp, tokenH = parseExpression tokenH 0 in
+  let curtoken = getCurToken tokenH in
+  let tokenH = advanceToken tokenH in
+  let astexpressions = astexpressions @ [astExp] in
+  match curtoken.typeOfToken with
+  | Lex.COMMA ->
+      parseListElement tokenH astexpressions
+  | Lex.RSQUARE ->
+      (astexpressions, tokenH)
+
 and parseExpression (tokenH : tokenHolder) (rbp : int) :
     expressionNodeAndTokenHolder =
   let curtoken = getCurToken tokenH in
-  let left, tokenH = genAstTerminalNode curtoken tokenH in
-  let operator = getCurToken tokenH in
-  let lbp = getBindingPower operator in
-  let expression, tokenH = foldl rbp lbp left tokenH in
-  let curtoken = getCurToken tokenH in
   match curtoken.typeOfToken with
-  | Lex.SEMICOLON ->
-      if rbp = 0 then
-        let tokenH = tokenTypeAssertAndAdvance tokenH Lex.SEMICOLON in
-        (expression, tokenH)
-      else (expression, tokenH)
+  | Lex.LSQUARE ->
+      let exp, tokenH = parseList tokenH in
+      let tokenH = handleSEMICOLON tokenH rbp in
+      (exp, tokenH)
   | _ ->
+      let left, tokenH = genAstTerminalNode curtoken tokenH in
+      let operator = getCurToken tokenH in
+      let lbp = getBindingPower operator in
+      let expression, tokenH = foldl rbp lbp left tokenH in
+      let tokenH = handleSEMICOLON tokenH rbp in
       (expression, tokenH)
 
 let parseLetStatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
@@ -229,9 +260,7 @@ and parseStatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
         parseLetStatement tokenH
     | Lex.RETURN ->
         parseReturnStatement tokenH
-    | Lex.INT ->
-        parseExpressionStatement tokenH
-    | Lex.IDENT ->
+    | Lex.INT | Lex.IDENT | Lex.LSQUARE ->
         parseExpressionStatement tokenH
     | Lex.FUNCTION ->
         parseFunctionStatement tokenH

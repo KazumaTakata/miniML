@@ -7,6 +7,7 @@ type evalObject =
   | EvalBoolObject of bool
   | EvalFuncObject of
       Parse.astIdentifierNode list * Parse.astStatementNode list
+  | EvalListObject of evalObject list
 
 type objectType = INT_OBJ | BOOL_OBJ
 
@@ -185,6 +186,25 @@ and evalExpression (node : Parse.astExpressionNode) (env : evalEnvironment) :
           let env = evalArglist env argparas arglist 0 in
           let obj, env = evalFuncBody statements env in
           (obj, env) )
+  | AstListNode x ->
+      let obj, env = evalList x env in
+      (obj, env)
+
+and evalList (node : Parse.astExpressionNode list) (env : evalEnvironment) :
+    evalObjectAndEnv =
+  let evallist, env = evalListElement node env [] in
+  (EvalListObject evallist, env)
+
+and evalListElement (node : Parse.astExpressionNode list)
+    (env : evalEnvironment) (evallist : evalObject list) :
+    evalObject list * evalEnvironment =
+  match node with
+  | [] ->
+      (evallist, env)
+  | hd :: tl ->
+      let obj, env = evalExpression hd env in
+      let newevallist = evallist @ [obj] in
+      evalListElement tl env newevallist
 
 and evalLet (node : Parse.astLetNode) (env : evalEnvironment) :
     evalObjectAndEnv =
