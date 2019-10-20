@@ -8,6 +8,7 @@ type astExpressionNode =
   | AstIdentNode of astIdentifierNode
   | AstFuncCallNode of astFuncCallNode
   | AstListNode of astListNode
+  | AstDictNode of (astExpressionNode * astExpressionNode) list
 
 and astFuncCallNode = astIdentifierNode * astExpressionNode list
 
@@ -182,12 +183,35 @@ and parseListElement (tokenH : tokenHolder)
   | Lex.RSQUARE ->
       (astexpressions, tokenH)
 
+and parseDictElement (tokenH : tokenHolder)
+    (astkeyvalues : (astExpressionNode * astExpressionNode) list) :
+    (astExpressionNode * astExpressionNode) list * tokenHolder =
+  let curtoken = getCurToken tokenH in
+  match curtoken.typeOfToken with
+  | Lex.RBRACE ->
+      let tokenH = tokenTypeAssertAndAdvance tokenH Lex.RBRACE in
+      (astkeyvalues, tokenH)
+  | _ ->
+      let keyExp, tokenH = parseExpression tokenH 0 in
+      let tokenH = tokenTypeAssertAndAdvance tokenH Lex.COLON in
+      let valueExp, tokenH = parseExpression tokenH 0 in
+      parseDictElement tokenH (astkeyvalues @ [(keyExp, valueExp)])
+
+and parseDict (tokenH : tokenHolder) : astExpressionNode * tokenHolder =
+  let tokenH = tokenTypeAssertAndAdvance tokenH Lex.LBRACE in
+  let keyvalues, tokenH = parseDictElement tokenH [] in
+  (AstDictNode keyvalues, tokenH)
+
 and parseExpression (tokenH : tokenHolder) (rbp : int) :
     expressionNodeAndTokenHolder =
   let curtoken = getCurToken tokenH in
   match curtoken.typeOfToken with
   | Lex.LSQUARE ->
       let exp, tokenH = parseList tokenH in
+      let tokenH = handleSEMICOLON tokenH rbp in
+      (exp, tokenH)
+  | Lex.LBRACE ->
+      let exp, tokenH = parseDict tokenH in
       let tokenH = handleSEMICOLON tokenH rbp in
       (exp, tokenH)
   | _ ->
@@ -260,7 +284,7 @@ and parseStatement (tokenH : tokenHolder) : astStatementNode * tokenHolder =
         parseLetStatement tokenH
     | Lex.RETURN ->
         parseReturnStatement tokenH
-    | Lex.INT | Lex.IDENT | Lex.LSQUARE ->
+    | Lex.INT | Lex.IDENT | Lex.LSQUARE | Lex.LBRACE ->
         parseExpressionStatement tokenH
     | Lex.FUNCTION ->
         parseFunctionStatement tokenH

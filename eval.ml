@@ -189,6 +189,27 @@ and evalExpression (node : Parse.astExpressionNode) (env : evalEnvironment) :
   | AstListNode x ->
       let obj, env = evalList x env in
       (obj, env)
+  | AstDictNode x ->
+      let obj, env = evalDict x env in
+      (obj, env)
+
+and evalDict (node : (Parse.astExpressionNode * Parse.astExpressionNode) list)
+    (env : evalEnvironment) : evalObjectAndEnv =
+  let evaldict, env = evalDictElement node env [] in
+  (EvalDictObject evalobj, env)
+
+and evalDictElement ((Parse.astExpressionNode * Parse.astExpressionNode) list) 
+(env : evalEnvironment) (evallist : evalObject list) :
+    evalObject list * evalEnvironment =
+  match node with
+  | [] ->
+      (evallist, env)
+  | hd :: tl ->
+      let key, value = hd in
+      let keyobj, env = evalExpression key env in
+      let valueobj, env = evalExpression value env in
+      let newevallist =  in
+      evalDictElement tl env newevallist
 
 and evalList (node : Parse.astExpressionNode list) (env : evalEnvironment) :
     evalObjectAndEnv =

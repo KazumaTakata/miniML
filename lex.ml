@@ -13,6 +13,7 @@ type tokenType =
   | LT
   | COMMA
   | SEMICOLON
+  | COLON
   | LPAREN
   | RPAREN
   | LBRACE
@@ -54,6 +55,8 @@ let tokentype_to_string (tokentype : tokenType) : string =
       "COMMA"
   | SEMICOLON ->
       "SEMICOLON"
+  | COLON ->
+      "COLON"
   | LPAREN ->
       "LPAREN"
   | RPAREN ->
@@ -181,6 +184,10 @@ let nextToken (lex : lexer) : tokenAndLexer =
   | ';' ->
       newTokenAndLexer
         {typeOfToken= SEMICOLON; literal= Char.escaped newlex.ch}
+        (readChar newlex)
+  | ':' ->
+      newTokenAndLexer
+        {typeOfToken= COLON; literal= Char.escaped newlex.ch}
         (readChar newlex)
   | '(' ->
       newTokenAndLexer
