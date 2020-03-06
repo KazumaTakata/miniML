@@ -1,5 +1,6 @@
 EXCLUDE_QUERY_DIR
 B /Users/kazumatakata/.opam/default/lib/base
+B /Users/kazumatakata/.opam/default/lib/base/base_internalhash_types
 B /Users/kazumatakata/.opam/default/lib/base/caml
 B /Users/kazumatakata/.opam/default/lib/base/md5
 B /Users/kazumatakata/.opam/default/lib/base/shadow_stdlib
@@ -8,8 +9,12 @@ B /Users/kazumatakata/.opam/default/lib/base_quickcheck
 B /Users/kazumatakata/.opam/default/lib/bin_prot
 B /Users/kazumatakata/.opam/default/lib/bin_prot/shape
 B /Users/kazumatakata/.opam/default/lib/core
+B /Users/kazumatakata/.opam/default/lib/core/error_checking_mutex
 B /Users/kazumatakata/.opam/default/lib/core_kernel
 B /Users/kazumatakata/.opam/default/lib/core_kernel/base_for_tests
+B /Users/kazumatakata/.opam/default/lib/core_kernel/bounded_int_table
+B /Users/kazumatakata/.opam/default/lib/core_kernel/flags
+B /Users/kazumatakata/.opam/default/lib/core_kernel/version_util
 B /Users/kazumatakata/.opam/default/lib/fieldslib
 B /Users/kazumatakata/.opam/default/lib/jane-street-headers
 B /Users/kazumatakata/.opam/default/lib/parsexp
@@ -21,6 +26,7 @@ B /Users/kazumatakata/.opam/default/lib/ppx_expect/collector
 B /Users/kazumatakata/.opam/default/lib/ppx_expect/common
 B /Users/kazumatakata/.opam/default/lib/ppx_expect/config
 B /Users/kazumatakata/.opam/default/lib/ppx_hash/runtime-lib
+B /Users/kazumatakata/.opam/default/lib/ppx_here/runtime-lib
 B /Users/kazumatakata/.opam/default/lib/ppx_inline_test/config
 B /Users/kazumatakata/.opam/default/lib/ppx_inline_test/runtime-lib
 B /Users/kazumatakata/.opam/default/lib/ppx_module_timer/runtime
@@ -38,6 +44,7 @@ B /usr/local/lib/ocaml
 B /usr/local/lib/ocaml/threads
 B _build/default/.main.eobjs/byte
 S /Users/kazumatakata/.opam/default/lib/base
+S /Users/kazumatakata/.opam/default/lib/base/base_internalhash_types
 S /Users/kazumatakata/.opam/default/lib/base/caml
 S /Users/kazumatakata/.opam/default/lib/base/md5
 S /Users/kazumatakata/.opam/default/lib/base/shadow_stdlib
@@ -46,8 +53,12 @@ S /Users/kazumatakata/.opam/default/lib/base_quickcheck
 S /Users/kazumatakata/.opam/default/lib/bin_prot
 S /Users/kazumatakata/.opam/default/lib/bin_prot/shape
 S /Users/kazumatakata/.opam/default/lib/core
+S /Users/kazumatakata/.opam/default/lib/core/error_checking_mutex
 S /Users/kazumatakata/.opam/default/lib/core_kernel
 S /Users/kazumatakata/.opam/default/lib/core_kernel/base_for_tests
+S /Users/kazumatakata/.opam/default/lib/core_kernel/bounded_int_table
+S /Users/kazumatakata/.opam/default/lib/core_kernel/flags
+S /Users/kazumatakata/.opam/default/lib/core_kernel/version_util
 S /Users/kazumatakata/.opam/default/lib/fieldslib
 S /Users/kazumatakata/.opam/default/lib/jane-street-headers
 S /Users/kazumatakata/.opam/default/lib/parsexp
@@ -59,6 +70,7 @@ S /Users/kazumatakata/.opam/default/lib/ppx_expect/collector
 S /Users/kazumatakata/.opam/default/lib/ppx_expect/common
 S /Users/kazumatakata/.opam/default/lib/ppx_expect/config
 S /Users/kazumatakata/.opam/default/lib/ppx_hash/runtime-lib
+S /Users/kazumatakata/.opam/default/lib/ppx_here/runtime-lib
 S /Users/kazumatakata/.opam/default/lib/ppx_inline_test/config
 S /Users/kazumatakata/.opam/default/lib/ppx_inline_test/runtime-lib
 S /Users/kazumatakata/.opam/default/lib/ppx_module_timer/runtime

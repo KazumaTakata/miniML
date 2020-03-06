@@ -2,3 +2,4 @@
   (name      main)
   (libraries core base stdio)
     (flags (:standard -w -8 -w -27 -w -39)))
+    
