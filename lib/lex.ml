@@ -105,11 +105,11 @@ let isDigit = function '0' .. '9' -> true | _ -> false
 
 let isLetterOrDigit (ch : char) : bool = isLetter ch || isDigit ch
 
-let ifLexInIsRange (lex : lexer) : bool =
-  if lex.position < String.length lex.input then true else false
+let ifLexEnd (lex : lexer) : bool =
+  if lex.position = String.length lex.input - 1 then true else false
 
 let advanceLex (lex : lexer) : lexer =
-  if ifLexInIsRange lex then
+  if not (ifLexEnd lex) then
     {
       input = lex.input;
       position = lex.position + 1;
@@ -119,8 +119,8 @@ let advanceLex (lex : lexer) : lexer =
   else
     {
       input = lex.input;
-      position = lex.position + 1;
-      ch = lex.input.[lex.position + 1];
+      position = lex.position;
+      ch = lex.input.[lex.position];
       if_end = true;
     }
 
