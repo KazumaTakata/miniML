@@ -49,7 +49,7 @@ let create_lex ((position : int), (if_end : bool), (input : string)) : Lex.lexer
 let lex_to_string (lexer : Lex.lexer) =
   String.concat ""
     [
-      "{";
+      "Lexer{";
       lexer.input;
       ", ";
       string_of_int lexer.position;
@@ -59,6 +59,27 @@ let lex_to_string (lexer : Lex.lexer) =
       Bool.to_string lexer.if_end;
       "}";
     ]
+
+let string_lex_to_string ((input : string), (lexer : Lex.lexer)) : string =
+  String.concat "" [ input; " , "; lex_to_string lexer ]
+
+let token_to_string (token : Lex.token) : string =
+  String.concat ""
+    [
+      "Token";
+      "{";
+      Lex.tokenTypeToString token.typeOfToken;
+      " ";
+      token.literal;
+      "}";
+    ]
+
+let token_lex_to_string ((token : Lex.token option), (lexer : Lex.lexer)) :
+    string =
+  match token with
+  | Some token ->
+      String.concat "" [ token_to_string token; " , "; lex_to_string lexer ]
+  | None -> String.concat "" [ "None"; " , "; lex_to_string lexer ]
 
 let test_ifLexEnd (input : string) =
   [
@@ -108,8 +129,51 @@ let test_getNumberOrString input =
   [
     ( "test getNumberOrString" >:: fun _ ->
       assert_equal
-        ("aa", create_lex (3, false, input))
-        (Lex.getNumberOrString (create_lex (0, false, input)) Lex.isDigit) );
+        ("332", create_lex (3, false, input))
+        (Lex.getNumberOrString (create_lex (0, false, input)) Lex.isDigit)
+        ~printer:string_lex_to_string );
+  ]
+
+let test_nextToken input =
+  [
+    ( "test nextToken" >:: fun _ ->
+      assert_equal
+        ( Some { Lex.typeOfToken = Lex.INT; Lex.literal = "334" },
+          create_lex (3, false, input) )
+        (Lex.nextToken (create_lex (0, false, input)))
+        ~printer:token_lex_to_string );
+    ( "test nextToken2" >:: fun _ ->
+      assert_equal
+        ( Some { Lex.typeOfToken = Lex.IDENT; Lex.literal = "ee" },
+          create_lex (4, true, input) )
+        (Lex.nextToken (create_lex (3, false, input)))
+        ~printer:token_lex_to_string );
+    ( "test nextToken3" >:: fun _ ->
+      assert_equal
+        (None, create_lex (4, true, input))
+        (Lex.nextToken (create_lex (4, true, input)))
+        ~printer:token_lex_to_string );
+  ]
+
+let test_nextToken2 input =
+  [
+    ( "test nextToken" >:: fun _ ->
+      assert_equal
+        ( Some { Lex.typeOfToken = Lex.INT; Lex.literal = "334" },
+          create_lex (3, false, input) )
+        (Lex.nextToken (create_lex (0, false, input)))
+        ~printer:token_lex_to_string );
+    ( "test nextToken2" >:: fun _ ->
+      assert_equal
+        ( Some { Lex.typeOfToken = Lex.IDENT; Lex.literal = "ee" },
+          create_lex (7, true, input) )
+        (Lex.nextToken (create_lex (3, false, input)))
+        ~printer:token_lex_to_string );
+    ( "test nextToken3" >:: fun _ ->
+      assert_equal
+        (None, create_lex (7, true, input))
+        (Lex.nextToken (create_lex (7, true, input)))
+        ~printer:token_lex_to_string );
   ]
 
 let tests =
@@ -119,5 +183,6 @@ let tests =
        @ test_skipWhitespace " (3+3)"
        @ test_readUntil "332ij"
        @ test_getNumberOrString "332ij"
+       @ test_nextToken "334ee" @ test_nextToken2 "334   ee"
 
 let _ = run_test_tt_main tests

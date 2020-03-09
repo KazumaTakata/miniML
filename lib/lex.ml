@@ -134,8 +134,14 @@ let rec readUntil (lex : lexer) (fn : char -> bool) : lexer =
 let getNumberOrString (lex : lexer) (fn : char -> bool) : string * lexer =
   let pos = lex.position in
   let newlex = readUntil lex fn in
-  let substring = String.sub newlex.input ~pos ~len:(newlex.position - pos) in
-  (substring, newlex)
+  if newlex.if_end then
+    let substring =
+      String.sub newlex.input ~pos ~len:(newlex.position + 1 - pos)
+    in
+    (substring, newlex)
+  else
+    let substring = String.sub newlex.input ~pos ~len:(newlex.position - pos) in
+    (substring, newlex)
 
 let nextToken (lex : lexer) : token option * lexer =
   let newlex = skipWhitespace lex in
