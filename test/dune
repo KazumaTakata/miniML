@@ -1,0 +1,2 @@
+(test 
+    (name lex_test)  (libraries core base stdio mylib ounit))

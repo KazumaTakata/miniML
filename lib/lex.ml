@@ -26,6 +26,35 @@ type tokenType =
   | ELSE
   | RETURN
   | FOR
+  | DUMMY
+
+let tokenTypeToString (token_type : tokenType) : string =
+  match token_type with
+  | IDENT -> "IDENT"
+  | INT -> "INT"
+  | ASSIGN -> "ASSIGN"
+  | PLUS -> "PLUS"
+  | MUL -> "MUL"
+  | GT -> "GT"
+  | LT -> "LT"
+  | COMMA -> "COMMA"
+  | SEMICOLON -> "SEMICOLON"
+  | COLON -> "COLON"
+  | LPAREN -> "LPAREN"
+  | RPAREN -> "RPAREN"
+  | LBRACE -> "LBRACE"
+  | RBRACE -> "RBRACE"
+  | LSQUARE -> "LSQUARE"
+  | RSQUARE -> "RSQUARE"
+  | FUNCTION -> "FUNCTION"
+  | LET -> "LET"
+  | TRUE -> "TRUE"
+  | FALSE -> "FALSE"
+  | IF -> "IF"
+  | ELSE -> "ELSE"
+  | RETURN -> "RETURN"
+  | FOR -> "FOR"
+  | _ -> "DUMMY"
 
 let charToTokenType (ch : char) : tokenType =
   match ch with
@@ -43,6 +72,7 @@ let charToTokenType (ch : char) : tokenType =
   | '}' -> RBRACE
   | '[' -> LSQUARE
   | ']' -> RSQUARE
+  | _ -> DUMMY
 
 let lookupIdent (literal : string) : tokenType =
   let keywords =
@@ -62,13 +92,7 @@ let lookupIdent (literal : string) : tokenType =
 
 type token = { typeOfToken : tokenType; literal : string }
 
-type lexer = {
-  input : string;
-  position : int;
-  ch : char;
-  keywords : (string * tokenType) list;
-  if_end : bool;
-}
+type lexer = { input : string; position : int; ch : char; if_end : bool }
 
 type tokenAndLexer = { token : token option; lexer : lexer }
 
@@ -90,7 +114,6 @@ let advanceLex (lex : lexer) : lexer =
       input = lex.input;
       position = lex.position + 1;
       ch = lex.input.[lex.position + 1];
-      keywords = lex.keywords;
       if_end = false;
     }
   else
@@ -98,7 +121,6 @@ let advanceLex (lex : lexer) : lexer =
       input = lex.input;
       position = lex.position + 1;
       ch = lex.input.[lex.position + 1];
-      keywords = lex.keywords;
       if_end = true;
     }
 
@@ -142,11 +164,10 @@ let nextToken (lex : lexer) : tokenAndLexer =
             Some { typeOfToken = tokentype; literal = token_string }
           in
           newTokenAndLexer token lexer
-        else if isDigit newlex.ch then
+        else
           let token_string, lexer = readUntilWithCondition newlex isDigit in
           let token = Some { typeOfToken = INT; literal = token_string } in
           newTokenAndLexer token lexer
-        else Out_channel.output_string stdout "illegal input\n"
 
 let newLexer input_code =
-  { input = input_code; position = 0; ch = input_code.[0] }
+  { input = input_code; position = 0; ch = input_code.[0]; if_end = false }

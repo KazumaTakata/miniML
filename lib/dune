@@ -1,0 +1,5 @@
+
+(library
+  (name mylib)
+  (libraries core base)
+)

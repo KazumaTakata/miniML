@@ -1,4 +1,5 @@
 open Core
+open Mylib
 
 let printPrompt () =
   Out_channel.output_string stdout ">>";
